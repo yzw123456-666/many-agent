@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -186,6 +186,7 @@ const ExpertsPage: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const categories = ['全部', '办公效率', '内容创作', '开发编程', '数据分析', 'AI Agent', '知识管理', '生活服务']
 
@@ -271,6 +272,21 @@ const ExpertsPage: React.FC = () => {
     fetchSkillhub(next, true)
   }
 
+  // 无限滚动：监听滚动事件，到底部自动加载
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || activeTab !== 'skillhub') return
+    const handleScroll = () => {
+      if (loadingMore || !hasMore) return
+      const { scrollTop, scrollHeight, clientHeight } = el
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        loadMore()
+      }
+    }
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [activeTab, loadingMore, hasMore, page])
+
   const suites = [
     { name: '办公效率套件', desc: '文档 + 表格 + 演示 + 邮件，一站式办公自动化', icon: '💼', color: 'bg-blue-500', downloads: 88000, stars: 421, slug: 'office-suite' },
     { name: '新媒体运营套件', desc: '图文创作、排版、多平台分发、数据复盘', icon: '📱', color: 'bg-pink-500', downloads: 76000, stars: 389, slug: 'media-suite' },
@@ -311,9 +327,7 @@ const ExpertsPage: React.FC = () => {
   const installedList = allSkillSources.filter(s => installedSkills.has(s.slug))
 
   const getDisplaySkills = () => {
-    if (activeTab === 'recommended') return featuredSkills
     if (activeTab === 'skillhub') return skillhubSkills
-    if (activeTab === 'suites') return suites
     return installedList
   }
 
@@ -323,19 +337,13 @@ const ExpertsPage: React.FC = () => {
     return true
   })
 
-  // 推荐页: 精选 + SkillHub 混合
-  const showFeatured = activeTab === 'recommended'
-  const showGrid = activeTab !== 'installed'
-
   return (
-    <div className="flex-1 overflow-y-auto" onClick={() => setContextMenu(null)}>
+    <div ref={scrollRef} className="flex-1 overflow-y-auto" onClick={() => setContextMenu(null)}>
       {/* Tabs */}
       <div className="border-b border-gray-200 px-6 pt-4">
         <div className="flex gap-6">
           {[
-            { id: 'recommended' as const, label: '推荐' },
             { id: 'skillhub' as const, label: 'SkillHub' },
-            { id: 'suites' as const, label: '套件' },
             { id: 'installed' as const, label: '我安装的' },
           ].map((tab) => (
             <button
@@ -439,47 +447,11 @@ const ExpertsPage: React.FC = () => {
           </div>
         )}
 
-        {/* ====== 推荐 - 精选技能 ====== */}
-        {showFeatured && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">精选技能</h2>
-            <div className="grid grid-cols-4 gap-3">
-              {featuredSkills.map((skill) => {
-                const isInstalled = installedSkills.has(skill.slug)
-                const isDown = downloading.has(skill.slug)
-                return (
-                  <div key={skill.slug} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-center gap-3 mb-2">
-                      <SkillAvatar skill={skill} />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (!isInstalled && !isDown) installSkill(skill.slug) }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        {isDown ? (
-                          <Loader2 size={16} className="text-primary-500 animate-spin" />
-                        ) : isInstalled ? (
-                          <Check size={16} className="text-primary-500" />
-                        ) : (
-                          <Plus size={16} className="text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 line-clamp-2">{skill.desc}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ====== SkillHub / 套件 列表 ====== */}
-        {showGrid && (
+        {/* ====== SkillHub 列表 ====== */}
+        {activeTab === 'skillhub' && (
           <>
           <div className="grid grid-cols-4 gap-3">
-            {displaySkills.filter(s => activeTab !== 'recommended' || !featuredSkills.some(f => f.slug === s.slug)).map((skill: any) => {
+            {displaySkills.map((skill: any) => {
               const slug = skill.slug || skill.name
               const isInstalled = installedSkills.has(slug)
               const isDown = downloading.has(slug)
@@ -514,17 +486,14 @@ const ExpertsPage: React.FC = () => {
               )
             })}
           </div>
-          {/* 加载更多 */}
-          {activeTab === 'skillhub' && hasMore && (
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-gray-600 transition-colors flex items-center gap-2"
-              >
-                {loadingMore ? <><Loader2 size={14} className="animate-spin" /> 加载中...</> : '加载更多'}
-              </button>
+          {/* 底部加载指示器 */}
+          {activeTab === 'skillhub' && loadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 size={20} className="text-gray-400 animate-spin" />
             </div>
+          )}
+          {activeTab === 'skillhub' && !hasMore && skillhubSkills.length > 0 && (
+            <div className="text-center py-4 text-xs text-gray-400">已加载全部技能</div>
           )}
           </>
         )}
