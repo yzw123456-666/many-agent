@@ -5,6 +5,7 @@ export interface Model {
   apiKey?: string
   baseUrl?: string
   enabled: boolean
+  parameterSize?: string    // 模型参数量，如 "7B", "14B", "70B"
   advanced: {
     functionCall: boolean
     imageInput: boolean
@@ -105,6 +106,7 @@ export interface AICapability {
   strengths: string[]    // 擅长领域（自动询问 + 用户描述）
   weaknesses: string[]   // 不擅长领域
   rating: number         // 综合评分 1-10
+  compositeScore: number // 综合能力分（结合参数量+评分+成功率，用于任务分配排序）
   taskCount: number      // 完成任务数
   successRate: number    // 成功率
   failureCount: number   // 连续/累计失败次数（用于重复失败检测）

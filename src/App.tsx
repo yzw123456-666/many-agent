@@ -730,6 +730,9 @@ const AIIntroPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-gray-800">{model.name}</h3>
                         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{model.provider}</span>
+                        {model.parameterSize && (
+                          <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{model.parameterSize}</span>
+                        )}
                         {rating > 0 && (
                           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
                             {'★'.repeat(Math.min(5, Math.round(rating / 2)))} {rating}/10
@@ -1091,11 +1094,6 @@ const MorePage: React.FC = () => {
   const items = [
     { icon: Bot, title: 'AI 介绍', desc: '查看所有已添加 AI 的能力介绍', color: 'text-primary-500', bgColor: 'bg-primary-50', page: 'aiIntro' },
     { icon: BarChart3, title: 'Token 用量', desc: '查看 API Token 消耗统计', color: 'text-blue-500', bgColor: 'bg-blue-50', page: 'tokenUsage' },
-    { icon: Zap, title: '深度研究', desc: '深度搜索与分析', color: 'text-cyan-500', bgColor: 'bg-cyan-50', page: null },
-    { icon: FileText, title: '文档处理', desc: '智能文档分析与总结', color: 'text-blue-500', bgColor: 'bg-blue-50', page: null },
-    { icon: BarChart3, title: '数据分析', desc: '数据可视化与分析', color: 'text-green-500', bgColor: 'bg-green-50', page: null },
-    { icon: Settings, title: '开发者工具', desc: '代码辅助与调试', color: 'text-orange-500', bgColor: 'bg-orange-50', page: null },
-    { icon: Search, title: '网页浏览', desc: '网络内容获取', color: 'text-purple-500', bgColor: 'bg-purple-50', page: null },
   ]
 
   return (

@@ -38,6 +38,7 @@ const AddModelDialog: React.FC<AddModelDialogProps> = ({ model, onSave, onClose 
     outputPrice: model?.advanced?.outputPrice ?? 0,
   })
   const [capability, setCapability] = useState(model?.capability || '')
+  const [parameterSize, setParameterSize] = useState(model?.parameterSize || '')
 
   const providerDropdownRef = useRef<HTMLDivElement>(null)
   const modelDropdownRef = useRef<HTMLDivElement>(null)
@@ -72,6 +73,7 @@ const AddModelDialog: React.FC<AddModelDialogProps> = ({ model, onSave, onClose 
       apiKey,
       baseUrl: selectedProviderId === 'custom' ? customEndpoint : currentProvider.baseUrl,
       enabled: true,
+      parameterSize: parameterSize || undefined,
       advanced,
       capability,
     }
@@ -224,6 +226,18 @@ const AddModelDialog: React.FC<AddModelDialogProps> = ({ model, onSave, onClose 
           )}
 
           {/* AI Capability */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">模型参数量</label>
+            <input
+              type="text"
+              value={parameterSize}
+              onChange={(e) => setParameterSize(e.target.value)}
+              placeholder="如：7B、14B、70B、405B（可留空）"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-all"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">填写模型参数量，系统会据此分配更合适的任务（大模型处理复杂任务，小模型处理简单任务）</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">擅长能力</label>
             <input

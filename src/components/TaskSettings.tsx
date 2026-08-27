@@ -198,6 +198,9 @@ const TaskSettings: React.FC<TaskSettingsProps> = ({ task, onClose }) => {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-wrap">
                           {model.name}
+                          {model.parameterSize && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded-full">{model.parameterSize}</span>
+                          )}
                           {selectedMainModels.includes(modelId) && (
                             <span className="text-[10px] px-1.5 py-0.5 bg-primary-100 text-primary-600 rounded-full">主模型</span>
                           )}
@@ -215,6 +218,7 @@ const TaskSettings: React.FC<TaskSettingsProps> = ({ task, onClose }) => {
                             <span className={cap.successRate >= 70 ? 'text-green-600' : cap.successRate >= 40 ? 'text-yellow-600' : 'text-red-500'}>
                               成功率 {cap.successRate}%
                             </span>
+                            <span>综合 {cap.compositeScore}/10</span>
                             <span>评分 {cap.rating}/10</span>
                           </div>
                         )}

@@ -433,11 +433,37 @@ aiCapabilities: Array.isArray(caps) ? caps : [],
   },
   updateAICapability: (modelId, updates) => {
     const caps = get().aiCapabilities
+    const models = get().models
     const existing = caps.find(c => c.modelId === modelId)
+    const model = models.find(m => m.id === modelId)
+
+    // 计算综合能力分：参数量权重30% + 评分权重40% + 成功率权重30%
+    const computeComposite = (rating: number, successRate: number, parameterSize?: string) => {
+      let sizeScore = 5 // 默认中等
+      if (parameterSize) {
+        const num = parseInt(parameterSize)
+        if (num >= 400) sizeScore = 10
+        else if (num >= 200) sizeScore = 9
+        else if (num >= 100) sizeScore = 8
+        else if (num >= 70) sizeScore = 7
+        else if (num >= 30) sizeScore = 6
+        else if (num >= 14) sizeScore = 5
+        else if (num >= 7) sizeScore = 4
+        else if (num >= 3) sizeScore = 3
+        else sizeScore = 2
+      }
+      return Math.round(sizeScore * 0.3 + rating * 0.4 + (successRate / 10) * 0.3)
+    }
+
+    const mergedRating = updates?.rating ?? existing?.rating ?? 5
+    const mergedSuccessRate = updates?.successRate ?? existing?.successRate ?? 100
+    const paramSize = model?.parameterSize ?? (existing as any)?.parameterSize
+    const compositeScore = computeComposite(mergedRating, mergedSuccessRate, paramSize)
+
     if (existing) {
-      set({ aiCapabilities: caps.map(c => c.modelId === modelId ? { ...c, ...updates } : c) })
+      set({ aiCapabilities: caps.map(c => c.modelId === modelId ? { ...c, ...updates, compositeScore } : c) })
     } else {
-      set({ aiCapabilities: [...caps, { modelId, strengths: [], weaknesses: [], rating: 5, taskCount: 0, successRate: 100, failureCount: 0, autoAssessed: false, ...updates }] })
+      set({ aiCapabilities: [...caps, { modelId, strengths: [], weaknesses: [], rating: 5, compositeScore: 5, taskCount: 0, successRate: 100, failureCount: 0, autoAssessed: false, ...updates }] })
     }
     saveCapabilitiesToDisk(get().aiCapabilities)
   },

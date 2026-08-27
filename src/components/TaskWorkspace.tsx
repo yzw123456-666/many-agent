@@ -431,7 +431,12 @@ const TaskWorkspace: React.FC<TaskWorkspaceProps> = ({ onBack }) => {
         if (!mainModel) throw new Error('未选择主模型')
 
         const subModelListDesc = subModels
-          .map(m => `- ${m.name}: 擅长 ${getCapabilityDesc(m.id)}`)
+          .map(m => {
+            const cap = aiCapabilities.find(c => c.modelId === m.id)
+            const sizeInfo = m.parameterSize ? ` (${m.parameterSize})` : ''
+            const scoreInfo = cap ? ` [综合:${cap.compositeScore}/10 评分:${cap.rating}/10 成功率:${cap.successRate}% 任务数:${cap.taskCount}]` : ''
+            return `- ${m.name}${sizeInfo}: 擅长 ${getCapabilityDesc(m.id)}${scoreInfo}`
+          })
           .join('\n')
 
         // 记录各模型执行情况用于能力评估

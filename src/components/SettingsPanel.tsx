@@ -368,7 +368,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
                   {/* 表头 */}
                   <div className="flex items-center px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500">
                     <span className="flex-1">模型</span>
-                    <span className="w-56">服务商</span>
+                    <span className="w-20 text-center">参数量</span>
+                    <span className="w-44">服务商</span>
                     <span className="w-28 text-right">操作</span>
                   </div>
 
@@ -395,7 +396,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
                             </span>
                             <span className="text-sm text-gray-800 truncate">{model.name}</span>
                           </div>
-                          <span className="w-56 text-sm text-gray-500 truncate">
+                          <span className="w-20 text-center text-xs text-gray-500">
+                            {model.parameterSize || '-'}
+                          </span>
+                          <span className="w-44 text-sm text-gray-500 truncate">
                             {getProviderName(model.provider)}
                           </span>
                           <div className="w-28 flex items-center justify-end gap-1.5">
