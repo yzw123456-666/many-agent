@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -19,7 +19,11 @@ import {
   Check,
   Trash2,
   MoreVertical,
+  MoreHorizontal,
   BarChart3,
+  MessageSquare,
+  PenLine,
+  Loader2,
 } from 'lucide-react'
 import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
@@ -28,6 +32,7 @@ import SettingsPanel from './components/SettingsPanel'
 import CreateTaskDialog from './components/CreateTaskDialog'
 import TaskSettings from './components/TaskSettings'
 import TaskWorkspace from './components/TaskWorkspace'
+import { skillhubAllSkills } from './data/skillhub_all'
 import { useAppStore } from './stores'
 import { DirTreeItem } from './types/electron'
 
@@ -148,76 +153,168 @@ const ProjectsPage: React.FC = () => {
 
 // 技能与连接器页面
 const ExpertsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'skills' | 'connectors'>('skills')
-  const [activeSource, setActiveSource] = useState<'recommended' | 'skillhub' | 'suites'>('recommended')
-  const categories = ['全部', 'Pay Skill', '办公效率', '内容创作', '开发编程', '数据分析', '设计多媒体', 'AI Agent', '知识管理']
+  const [activeTab, setActiveTab] = useState<'recommended' | 'skillhub' | 'suites' | 'installed'>('recommended')
   const [activeCategory, setActiveCategory] = useState('全部')
-  const [connected, setConnected] = useState<Set<string>>(new Set())
+  const [installedSkills, setInstalledSkills] = useState<Set<string>>(new Set())
+  const [enabledSkills, setEnabledSkills] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; skill: any } | null>(null)
+  const [downloading, setDownloading] = useState<Set<string>>(new Set())
+  const [skillhubSkills, setSkillhubSkills] = useState<any[]>(skillhubAllSkills)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+
+  const categories = ['全部', '办公效率', '内容创作', '开发编程', '数据分析', 'AI Agent', '知识管理', '生活服务']
 
   const featuredSkills = [
-    { name: '腾讯微云', desc: '管理腾讯微云网盘平台：列表、上传、下载、删除、分享', icon: '☁️', color: 'bg-blue-100' },
-    { name: '腾讯问卷', desc: '腾讯问卷操作（创建、修改、逻辑设置、统计）', icon: '📋', color: 'bg-green-100' },
-    { name: '鹅厂辟谣助手', desc: '面向腾讯相关传闻的辟谣辅助 Skill', icon: '🔍', color: 'bg-yellow-100' },
-    { name: '腾讯会议', desc: '腾讯会议管理助手，支持预约/创建/修改/取消会议', icon: '📹', color: 'bg-blue-100' },
+    { name: '腾讯微云', desc: '管理腾讯微云网盘平台：列表、上传、下载、删除、分享', icon: '☁️', color: 'bg-blue-500', slug: 'tencent-wvyun' },
+    { name: '腾讯问卷', desc: '腾讯问卷操作（创建、修改、逻辑设置、统计）', icon: '📋', color: 'bg-green-500', slug: 'tencent-wenjuan' },
+    { name: '鹅厂辟谣助手', desc: '面向腾讯相关传闻的辟谣辅助 Skill', icon: '🔍', color: 'bg-yellow-500', slug: 'epang-piyao' },
+    { name: '腾讯会议', desc: '腾讯会议管理助手，支持预约/创建/修改/取消会议', icon: '📹', color: 'bg-blue-600', slug: 'tencent-meeting' },
   ]
 
-  const skills = [
-    { name: '腾讯文档', desc: '腾讯文档（docs.qq.com）在线协同平台', icon: '📄', downloads: '492k', stars: '259' },
-    { name: 'ima-skills', desc: 'ima skills：支持对笔记、知识库的读取、写入', icon: '📝', downloads: '263k', stars: '495' },
-    { name: 'web-tools-guide', desc: 'MANDATORY before calling web_search', icon: '🌐', downloads: '217k', stars: '209' },
-    { name: '文章去AI味工具', desc: '去除文本中的AI写作痕迹，让文字读起来更像人类写作', icon: '✍️', downloads: '166k', stars: '575' },
-    { name: 'WPS Office 全家桶', desc: 'WPS/MS Office/LibreOffice的Python操作', icon: '📊', downloads: '109k', stars: '52' },
-    { name: 'smart-charts', desc: '2步生成图表：上传数据 → 将CSV/Excel/JSON文件', icon: '📈', downloads: '109k', stars: '47' },
-  ]
+  // 实时从 SkillHub API 获取技能（按下载量排序）
+  const fetchSkillhub = useCallback(async (pageNum: number, append = false) => {
+    setLoadingMore(true)
+    try {
+      const resp = await fetch(`https://api.skillhub.cn/api/skills?page=${pageNum}&pageSize=50&sortBy=downloads`, {
+        headers: { 'Accept': 'application/json' }
+      })
+      const data = await resp.json()
+      if (data?.data?.skills) {
+        const colors = ['bg-blue-500','bg-green-500','bg-red-500','bg-yellow-500','bg-purple-500','bg-pink-500','bg-indigo-500','bg-cyan-500','bg-orange-500','bg-teal-500','bg-rose-500','bg-violet-500','bg-emerald-500','bg-sky-500','bg-amber-500']
+        const catMap: Record<string,string> = { 'office-efficiency':'办公效率','content-creation':'内容创作','dev-programming':'开发编程','data-analysis':'数据分析','design-media':'设计多媒体','ai-agent':'AI Agent','knowledge-management':'知识管理','life-service':'生活服务','business-ops':'商业运营','professional':'专业领域','education':'教育学习' }
+        const catIcon: Record<string,string> = { 'office-efficiency':'💼','content-creation':'✍️','dev-programming':'💻','data-analysis':'📊','design-media':'🎨','ai-agent':'🤖','knowledge-management':'🧠','life-service':'🏠','business-ops':'📈','professional':'👔','education':'📚' }
+        const mapped = data.data.skills.map((s: any, i: number) => ({
+          slug: s.slug,
+          name: s.name,
+          desc: (s.description_zh || s.description || '').slice(0, 120),
+          icon: catIcon[s.category] || '📦',
+          color: colors[(pageNum * 50 + i) % colors.length],
+          category: catMap[s.category] || '其他',
+          downloads: s.downloads || 0,
+          stars: s.stars || 0,
+        }))
+        if (append) {
+          setSkillhubSkills(prev => [...prev, ...mapped])
+        } else {
+          setSkillhubSkills(mapped)
+        }
+        setHasMore(data.data.skills.length === 50)
+      }
+    } catch (e) {
+      console.error('SkillHub fetch error:', e)
+    }
+    setLoadingMore(false)
+  }, [])
 
-  const skillhubSkills = [
-    { name: 'github-explorer', desc: '浏览 GitHub 仓库、Issue、PR 并生成摘要报告', icon: '🐙', downloads: '321k', stars: '812' },
-    { name: 'pdf-master', desc: 'PDF 解析、合并、拆分、OCR 识别一站式处理', icon: '📕', downloads: '288k', stars: '640' },
-    { name: 'sql-assistant', desc: '自然语言转 SQL，支持主流数据库方言', icon: '🗄️', downloads: '201k', stars: '533' },
-    { name: 'seo-optimizer', desc: '网页 SEO 诊断与关键词优化建议', icon: '🔧', downloads: '154k', stars: '387' },
-    { name: 'translate-pro', desc: '多语言互译，保留格式与专业术语', icon: '🌍', downloads: '142k', stars: '356' },
-    { name: 'code-reviewer', desc: '代码审查：规范、漏洞、性能建议', icon: '👩‍💻', downloads: '98k', stars: '298' },
-  ]
+  // 首次加载 + 搜索时重新获取
+  useEffect(() => {
+    if (activeTab === 'skillhub') {
+      setPage(1)
+      fetchSkillhub(1, false)
+    }
+  }, [activeTab, fetchSkillhub])
+
+  // 搜索时防抖获取
+  useEffect(() => {
+    if (activeTab !== 'skillhub' || !searchQuery) return
+    const timer = setTimeout(async () => {
+      try {
+        const resp = await fetch(`https://api.skillhub.cn/api/skills?page=1&pageSize=50&sortBy=downloads&keyword=${encodeURIComponent(searchQuery)}`, {
+          headers: { 'Accept': 'application/json' }
+        })
+        const data = await resp.json()
+        if (data?.data?.skills) {
+          const colors = ['bg-blue-500','bg-green-500','bg-red-500','bg-yellow-500','bg-purple-500','bg-pink-500','bg-indigo-500','bg-cyan-500','bg-orange-500','bg-teal-500','bg-rose-500','bg-violet-500','bg-emerald-500','bg-sky-500','bg-amber-500']
+          const catMap: Record<string,string> = { 'office-efficiency':'办公效率','content-creation':'内容创作','dev-programming':'开发编程','data-analysis':'数据分析','design-media':'设计多媒体','ai-agent':'AI Agent','knowledge-management':'知识管理','life-service':'生活服务','business-ops':'商业运营','professional':'专业领域','education':'教育学习' }
+          const catIcon: Record<string,string> = { 'office-efficiency':'💼','content-creation':'✍️','dev-programming':'💻','data-analysis':'📊','design-media':'🎨','ai-agent':'🤖','knowledge-management':'🧠','life-service':'🏠','business-ops':'📈','professional':'👔','education':'📚' }
+          setSkillhubSkills(data.data.skills.map((s: any, i: number) => ({
+            slug: s.slug, name: s.name, desc: (s.description_zh || s.description || '').slice(0, 120),
+            icon: catIcon[s.category] || '📦', color: colors[i % colors.length],
+            category: catMap[s.category] || '其他', downloads: s.downloads || 0, stars: s.stars || 0,
+          })))
+        }
+      } catch (e) { console.error(e) }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchQuery, activeTab])
+
+  // 加载更多
+  const loadMore = () => {
+    if (loadingMore || !hasMore) return
+    const next = page + 1
+    setPage(next)
+    fetchSkillhub(next, true)
+  }
 
   const suites = [
-    { name: '办公效率套件', desc: '文档 + 表格 + 演示 + 邮件，一站式办公自动化', icon: '💼', downloads: '88k', stars: '421' },
-    { name: '新媒体运营套件', desc: '图文创作、排版、多平台分发、数据复盘', icon: '📱', downloads: '76k', stars: '389' },
-    { name: '数据分析套件', desc: '数据清洗、可视化图表、分析报告自动生成', icon: '📊', downloads: '65k', stars: '342' },
-    { name: '开发编程套件', desc: '代码生成、审查、测试、部署全流程辅助', icon: '⌨️', downloads: '59k', stars: '315' },
-    { name: '电商运营套件', desc: '商品文案、详情页、评价分析、竞品监控', icon: '🛒', downloads: '47k', stars: '264' },
-    { name: '知识管理套件', desc: '笔记收集、知识库构建、智能检索与问答', icon: '🧠', downloads: '41k', stars: '231' },
+    { name: '办公效率套件', desc: '文档 + 表格 + 演示 + 邮件，一站式办公自动化', icon: '💼', color: 'bg-blue-500', downloads: 88000, stars: 421, slug: 'office-suite' },
+    { name: '新媒体运营套件', desc: '图文创作、排版、多平台分发、数据复盘', icon: '📱', color: 'bg-pink-500', downloads: 76000, stars: 389, slug: 'media-suite' },
+    { name: '数据分析套件', desc: '数据清洗、可视化图表、分析报告自动生成', icon: '📊', color: 'bg-emerald-500', downloads: 65000, stars: 342, slug: 'data-suite' },
+    { name: '开发编程套件', desc: '代码生成、审查、测试、部署全流程辅助', icon: '⌨️', color: 'bg-sky-500', downloads: 59000, stars: 315, slug: 'dev-suite' },
+    { name: '电商运营套件', desc: '商品文案、详情页、评价分析、竞品监控', icon: '🛒', color: 'bg-orange-500', downloads: 47000, stars: 264, slug: 'ecommerce-suite' },
+    { name: '知识管理套件', desc: '笔记收集、知识库构建、智能检索与问答', icon: '🧠', color: 'bg-violet-500', downloads: 41000, stars: 231, slug: 'knowledge-suite' },
   ]
 
-  const sourceSkills = activeSource === 'skillhub' ? skillhubSkills : activeSource === 'suites' ? suites : skills
+  const installSkill = (slug: string) => {
+    setDownloading(prev => { const n = new Set(prev); n.add(slug); return n })
+    setTimeout(() => {
+      setInstalledSkills(prev => { const n = new Set(prev); n.add(slug); return n })
+      setEnabledSkills(prev => { const n = new Set(prev); n.add(slug); return n })
+      setDownloading(prev => { const n = new Set(prev); n.delete(slug); return n })
+    }, 800)
+  }
 
-  const connectors = [
-    { id: 'wechat', name: '微信', desc: '连接微信，收发消息、机器人自动回复', icon: '💬', color: 'bg-green-100' },
-    { id: 'qq', name: 'QQ', desc: '连接 QQ，消息通知与机器人互动', icon: '🐧', color: 'bg-blue-100' },
-    { id: 'dingtalk', name: '钉钉', desc: '连接钉钉，群机器人推送、工作通知', icon: '📌', color: 'bg-sky-100' },
-    { id: 'email', name: '邮箱', desc: '连接邮箱（SMTP/IMAP），收发与读取邮件', icon: '📧', color: 'bg-orange-100' },
-    { id: 'wecom', name: '企业微信', desc: '连接企业微信，群通知与应用消息', icon: '💼', color: 'bg-indigo-100' },
-    { id: 'feishu', name: '飞书', desc: '连接飞书，机器人消息与云文档', icon: '🕊️', color: 'bg-cyan-100' },
-    { id: 'telegram', name: 'Telegram', desc: '连接 Telegram Bot，跨平台消息推送', icon: '📨', color: 'bg-blue-100' },
-    { id: 'webhook', name: 'Webhook', desc: '自定义 Webhook，连接任意 HTTP 服务', icon: '🔗', color: 'bg-gray-100' },
-  ]
-
-  const toggleConnect = (id: string) => {
-    setConnected(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
+  const toggleEnabled = (slug: string) => {
+    setEnabledSkills(prev => {
+      const n = new Set(prev)
+      if (n.has(slug)) n.delete(slug); else n.add(slug)
+      return n
     })
   }
 
+  const uninstallSkill = (slug: string) => {
+    setInstalledSkills(prev => { const n = new Set(prev); n.delete(slug); return n })
+    setEnabledSkills(prev => { const n = new Set(prev); n.delete(slug); return n })
+  }
+
+  const handleContextMenu = (e: React.MouseEvent, skill: any) => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY, skill })
+  }
+
+  const allSkillSources = [...featuredSkills, ...skillhubSkills]
+  const installedList = allSkillSources.filter(s => installedSkills.has(s.slug))
+
+  const getDisplaySkills = () => {
+    if (activeTab === 'recommended') return featuredSkills
+    if (activeTab === 'skillhub') return skillhubSkills
+    if (activeTab === 'suites') return suites
+    return installedList
+  }
+
+  const displaySkills = getDisplaySkills().filter(s => {
+    if (searchQuery && !s.name.toLowerCase().includes(searchQuery.toLowerCase()) && !s.desc.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    if (activeCategory !== '全部' && 'category' in s && (s as any).category !== activeCategory) return false
+    return true
+  })
+
+  // 推荐页: 精选 + SkillHub 混合
+  const showFeatured = activeTab === 'recommended'
+  const showGrid = activeTab !== 'installed'
+
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto" onClick={() => setContextMenu(null)}>
       {/* Tabs */}
       <div className="border-b border-gray-200 px-6 pt-4">
         <div className="flex gap-6">
           {[
-            { id: 'skills' as const, label: '技能', icon: Zap },
-            { id: 'connectors' as const, label: '连接器', icon: Workflow },
+            { id: 'recommended' as const, label: '推荐' },
+            { id: 'skillhub' as const, label: 'SkillHub' },
+            { id: 'suites' as const, label: '套件' },
+            { id: 'installed' as const, label: '我安装的' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -228,144 +325,211 @@ const ExpertsPage: React.FC = () => {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <tab.icon size={14} />
               {tab.label}
+              {tab.id === 'installed' && installedSkills.size > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-primary-100 text-primary-600 rounded-full">{installedSkills.size}</span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
       <div className="p-6">
-        {activeTab === 'skills' && (
-          <>
-            {/* Featured Skills */}
-            {activeSource === 'recommended' && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">精选技能</h2>
-                <div className="grid grid-cols-4 gap-3">
-                  {featuredSkills.map((skill, i) => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`w-10 h-10 ${skill.color} rounded-lg flex items-center justify-center text-xl`}>{skill.icon}</span>
-                        <div>
-                          <div className="font-medium text-gray-800 text-sm">{skill.name}</div>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 line-clamp-2">{skill.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Search */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder={activeTab === 'installed' ? '搜索已安装的技能...' : '搜索技能...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-300"
+            />
+          </div>
+        </div>
 
-            {/* Source Filter: 推荐 / SkillHub / 套件 */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                {([
-                  { id: 'recommended' as const, label: '推荐' },
-                  { id: 'skillhub' as const, label: 'SkillHub' },
-                  { id: 'suites' as const, label: '套件' },
-                ]).map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setActiveSource(s.id)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                      activeSource === s.id
-                        ? 'bg-gray-800 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+        {/* Categories */}
+        {activeTab !== 'installed' && (
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  activeCategory === cat ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >{cat}</button>
+            ))}
+          </div>
+        )}
+
+        {/* ====== 我安装的 - 严格按参考图 ====== */}
+        {activeTab === 'installed' && (
+          <div className="grid grid-cols-3 gap-4">
+            {installedList.length === 0 ? (
+              <div className="col-span-3 text-center py-16">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Download size={24} className="text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm mb-1">还没有安装任何技能</p>
+                <p className="text-gray-400 text-xs">去「推荐」或「SkillHub」浏览并安装技能</p>
+              </div>
+            ) : (
+              displaySkills.map((skill: any) => {
+                const slug = skill.slug
+                const isEnabled = enabledSkills.has(slug)
+                return (
+                  <div
+                    key={slug}
+                    className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                    onContextMenu={(e) => handleContextMenu(e, skill)}
                   >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${skill.color} rounded-full flex items-center justify-center text-lg flex-shrink-0`}>
+                        {skill.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
+                        <p className="text-xs text-gray-400 mt-0.5">{skill.desc}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleContextMenu(e, skill) }}
+                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                        >
+                          <MoreHorizontal size={16} className="text-gray-400" />
+                        </button>
+                        <button
+                          onClick={() => toggleEnabled(slug)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            isEnabled ? 'bg-cyan-500' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                            isEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
 
-              {/* Categories */}
-              {activeSource === 'recommended' && (
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                        activeCategory === cat
-                          ? 'bg-gray-800 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Skills Grid */}
-              <div className="grid grid-cols-4 gap-3">
-                {sourceSkills.map((skill, i) => (
-                  <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
+        {/* ====== 推荐 - 精选技能 ====== */}
+        {showFeatured && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">精选技能</h2>
+            <div className="grid grid-cols-4 gap-3">
+              {featuredSkills.map((skill) => {
+                const isInstalled = installedSkills.has(skill.slug)
+                const isDown = downloading.has(skill.slug)
+                return (
+                  <div key={skill.slug} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-xl">{skill.icon}</span>
+                      <div className={`w-10 h-10 ${skill.color} rounded-full flex items-center justify-center text-lg`}>{skill.icon}</div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
                       </div>
-                      <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                        <Plus size={14} className="text-gray-500" />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (!isInstalled && !isDown) installSkill(skill.slug) }}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {isDown ? (
+                          <Loader2 size={16} className="text-primary-500 animate-spin" />
+                        ) : isInstalled ? (
+                          <Check size={16} className="text-primary-500" />
+                        ) : (
+                          <Plus size={16} className="text-gray-400" />
+                        )}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">{skill.desc}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-400">
-                      <span className="flex items-center gap-1"><Download size={10} />{skill.downloads}</span>
-                      <span className="flex items-center gap-1"><Star size={10} />{skill.stars}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'connectors' && (
-          <>
-            <h2 className="text-lg font-semibold text-gray-800 mb-1">连接器</h2>
-            <p className="text-sm text-gray-500 mb-5">将 Many AI 接入你的聊天与办公工具，实现消息互通与自动化触达</p>
-            <div className="grid grid-cols-4 gap-3">
-              {connectors.map((c) => {
-                const isConnected = connected.has(c.id)
-                return (
-                  <div key={c.id} className={`bg-white border rounded-xl p-4 transition-all ${
-                    isConnected ? 'border-primary-300 ring-1 ring-primary-200' : 'border-gray-200 hover:shadow-md'
-                  }`}>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className={`w-10 h-10 ${c.color} rounded-lg flex items-center justify-center text-xl`}>{c.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-800 text-sm flex items-center gap-1.5">
-                          {c.name}
-                          {isConnected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="已连接" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-3 min-h-[32px]">{c.desc}</p>
-                    <button
-                      onClick={() => toggleConnect(c.id)}
-                      className={`w-full py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                        isConnected
-                          ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          : 'bg-primary-500 text-white hover:bg-primary-600'
-                      }`}
-                    >
-                      {isConnected ? (
-                        <><Check size={12} />已连接（点击断开）</>
-                      ) : (
-                        <><Plus size={12} />连接</>
-                      )}
-                    </button>
+                    <p className="text-xs text-gray-500 line-clamp-2">{skill.desc}</p>
                   </div>
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* ====== SkillHub / 套件 列表 ====== */}
+        {showGrid && (
+          <>
+          <div className="grid grid-cols-4 gap-3">
+            {displaySkills.filter(s => activeTab !== 'recommended' || !featuredSkills.some(f => f.slug === s.slug)).map((skill: any) => {
+              const slug = skill.slug || skill.name
+              const isInstalled = installedSkills.has(slug)
+              const isDown = downloading.has(slug)
+              return (
+                <div key={slug} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`w-10 h-10 ${skill.color || 'bg-gray-400'} rounded-full flex items-center justify-center text-lg`}>{skill.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (!isInstalled && !isDown) installSkill(slug) }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      {isDown ? (
+                        <Loader2 size={16} className="text-primary-500 animate-spin" />
+                      ) : isInstalled ? (
+                        <Check size={16} className="text-primary-500" />
+                      ) : (
+                        <Plus size={16} className="text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-2 mb-2">{skill.desc}</p>
+                  {skill.downloads && (
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><Download size={10} />{(skill.downloads / 1000).toFixed(0)}k</span>
+                      <span className="flex items-center gap-1"><Star size={10} />{skill.stars}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {/* 加载更多 */}
+          {activeTab === 'skillhub' && hasMore && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-gray-600 transition-colors flex items-center gap-2"
+              >
+                {loadingMore ? <><Loader2 size={14} className="animate-spin" /> 加载中...</> : '加载更多'}
+              </button>
+            </div>
+          )}
           </>
+        )}
+
+        {/* ====== 右键菜单 ====== */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 min-w-[160px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5">
+              <MessageSquare size={15} className="text-gray-400" /> 去对话
+            </button>
+            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5">
+              <FolderOpen size={15} className="text-gray-400" /> 打开文件夹
+            </button>
+            <div className="border-t border-gray-100 my-1" />
+            <button
+              onClick={() => { uninstallSkill(contextMenu.skill.slug); setContextMenu(null) }}
+              className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-2.5"
+            >
+              <Trash2 size={15} /> 卸载
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -1,123 +1,144 @@
-# Many AI - 智能助手桌面应用
+# Many AI - Multi-Agent Desktop Application
 
 一个基于 Electron + React + TypeScript 的多智能体桌面应用，支持多模型协作完成复杂任务。
 
-## ✨ 核心特性
+A Multi-Agent Desktop Application built with Electron + React + TypeScript, supporting multi-model collaboration for complex tasks.
 
-### 🤖 多智能体协作
-- **任务编排引擎**：自动将复杂任务拆分为子任务，分配给不同模型并行执行
-- **主模型验收**：子任务完成后由主模型进行质量审查，不合格自动返工修正
-- **独立思考链**：每个子任务拥有独立上下文，不互相污染
-- **覆盖冲突检测**：自动检测多模型同时修改同一文件的冲突
+---
 
-### 🧠 智能上下文管理
-- **共享上下文环**：黑弧=已用，灰弧=剩余，直观显示token消耗
-- **80%自动压缩**：使用LLM摘要（非暴力截断），保留任务目标/文件路径/代码/未完成项
-- **防抖保护**：≥4条新消息后才触发压缩，避免频繁调用
+## ✨ Features / 功能特性
 
-### 🎯 实时交互系统
-- **三色思考链**：蓝色呼吸动画→黑色展开→折叠后白色文字
-- **工具结果卡片**：可展开的工具调用详情（读写文件、执行命令等）
-- **安全警告卡片**：危险命令（rm -rf/del /f等）拦截并确认
-- **内联问答选项**：编号按钮直接选择，无需弹窗
+### 🤖 Multi-Agent Collaboration / 多智能体协作
+- **Task Orchestration Engine** / 任务编排引擎：Auto-split complex tasks, assign to different models for parallel execution / 自动将复杂任务拆分为子任务，分配给不同模型并行执行
+- **Main Model Review** / 主模型验收：Quality review after sub-task completion, auto-rework on failure / 子任务完成后由主模型进行质量审查，不合格自动返工修正
+- **Independent Context** / 独立思考链：Each sub-task has independent context, no cross-contamination / 每个子任务拥有独立上下文，不互相污染
+- **Conflict Detection** / 覆盖冲突检测：Auto-detect when multiple models modify the same file / 自动检测多模型同时修改同一文件的冲突
 
-### 📋 任务管理
-- **折叠式任务面板**：显示已完成/进行中/待处理任务数量
-- **侧边栏AI状态**：实时显示每个模型的上下文使用率
-- **独立工作区**：点击任务卡片进入专属聊天界面
+### 🧠 Smart Context Management / 智能上下文管理
+- **Shared Context Ring** / 共享上下文环：Black arc = used, gray arc = remaining, intuitive token display / 黑弧=已用，灰弧=剩余，直观显示token消耗
+- **80% Auto-Compaction** / 80%自动压缩：LLM-based summary (not brute-force truncation), preserving task goals/file paths/code/unfinished items / 使用LLM摘要（非暴力截断），保留任务目标/文件路径/代码/未完成项
+- **Anti-Thrash Guard** / 防抖保护：Requires ≥4 new messages before compression to avoid frequent calls / ≥4条新消息后才触发压缩，避免频繁调用
 
-### 🌐 国际化支持
-- 中文/英文双语切换
-- 自动检测系统语言
+### 🎯 Real-time Interaction / 实时交互系统
+- **Three-color Thinking Chain** / 三色思考链：Blue breathing → Black expanded → White text collapsed / 蓝色呼吸动画→黑色展开→折叠后白色文字
+- **Tool Result Cards** / 工具结果卡片：Expandable tool call details (read/write files, execute commands) / 可展开的工具调用详情（读写文件、执行命令等）
+- **Security Warning Cards** / 安全警告卡片：Dangerous commands (rm -rf/del /f etc.) intercepted and confirmed / 危险命令（rm -rf/del /f等）拦截并确认
+- **Inline Question Options** / 内联问答选项：Numbered buttons for direct selection, no popup needed / 编号按钮直接选择，无需弹窗
 
-## 🛠️ 技术栈
+### 📋 Task Management / 任务管理
+- **Collapsible Task Panel** / 折叠式任务面板：Show completed/in-progress/pending task counts / 显示已完成/进行中/待处理任务数量
+- **Sidebar AI Status** / 侧边栏AI状态：Real-time context usage display for each model / 实时显示每个模型的上下文使用率
+- **Independent Workspace** / 独立工作区：Click task card to enter dedicated chat interface / 点击任务卡片进入专属聊天界面
 
-| 层级 | 技术 |
-|------|------|
-| 前端框架 | React 18 + TypeScript |
-| UI样式 | Tailwind CSS |
-| 状态管理 | Zustand (持久化到Electron Store) |
-| 路由 | React Router v6 |
+### 🌐 Internationalization / 国际化
+- Chinese / English bilingual support / 中英文双语切换
+- Auto-detect system language / 自动检测系统语言
+
+---
+
+## 🛠️ Tech Stack / 技术栈
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend / 前端框架 | React 18 + TypeScript |
+| UI Styling / UI样式 | Tailwind CSS |
+| State Management / 状态管理 | Zustand (persisted to Electron Store) |
+| Routing / 路由 | React Router v6 |
 | Markdown | react-markdown + remark-gfm + react-syntax-highlighter |
-| 图标 | Lucide React |
-| 国际化 | react-i18next |
-| 桌面框架 | Electron 32 |
-| 构建工具 | Vite 5 |
-| 打包 | electron-builder |
+| Icons / 图标 | Lucide React |
+| i18n | react-i18next |
+| Desktop Framework / 桌面框架 | Electron 32 |
+| Build Tool / 构建工具 | Vite 5 |
+| Packaging / 打包 | electron-builder |
 
-## 🚀 快速开始
+---
 
-### 环境要求
+## 🚀 Quick Start / 快速开始
+
+### Requirements / 环境要求
 - Node.js >= 18
 - npm >= 9
 
-### 开发模式
+### Development Mode / 开发模式
 ```bash
-# 安装依赖
+# Install dependencies / 安装依赖
 npm install
 
-# 启动开发服务器
+# Start dev server / 启动开发服务器
 npm run electron:dev
 ```
 
-### 构建打包
+### Build & Package / 构建打包
 ```bash
-# Windows NSIS安装包
+# Windows NSIS Installer / Windows安装包
 npm run electron:build:win
 
-# Windows便携版
+# Windows Portable / Windows便携版
 npm run electron:build:portable
 ```
 
-## 📁 项目结构
+---
+
+## 📁 Project Structure / 项目结构
 
 ```
 src/
-├── components/          # UI组件
-│   ├── ChatMessage.tsx     # 聊天消息渲染（含思考链、代码块）
-│   ├── ContextRing.tsx     # 共享上下文环组件
-│   ├── InputArea.tsx       # 输入区域（含文件上传、模型选择）
-│   ├── Markdown.tsx        # Markdown渲染器
-│   ├── Sidebar.tsx         # 侧边栏（会话列表+AI状态）
-│   ├── TaskChecklist.tsx   # 任务检查清单
-│   ├── TaskWorkspace.tsx   # 任务工作区（主聊天界面）
-│   └── ThinkingBlock.tsx   # 可折叠思考链组件
-├── engine/              # 任务编排引擎
-│   └── agentEngine.ts      # 核心：runAgentLoop + orchestrate
-├── hooks/               # 自定义Hooks
-├── i18n/                # 国际化配置
-│   └── index.ts
-├── stores/              # 状态管理
-│   └── index.ts            # Zustand Store
-├── types/               # TypeScript类型定义
-│   └── index.ts
-├── utils/               # 工具函数
-├── App.tsx              # 主应用（路由+布局）
-└── main.tsx             # 入口
+├── components/          # UI Components / UI组件
+│   ├── ChatMessage.tsx     # Chat message rendering / 聊天消息渲染
+│   ├── ContextRing.tsx     # Shared context ring / 共享上下文环组件
+│   ├── InputArea.tsx       # Input area with file upload / 输入区域
+│   ├── Markdown.tsx        # Markdown renderer / Markdown渲染器
+│   ├── Sidebar.tsx         # Sidebar with AI status / 侧边栏
+│   ├── TaskChecklist.tsx   # Task checklist / 任务检查清单
+│   ├── TaskWorkspace.tsx   # Task workspace / 任务工作区
+│   └── ThinkingBlock.tsx   # Collapsible thinking chain / 可折叠思考链
+├── engine/              # Task orchestration engine / 任务编排引擎
+│   └── agentEngine.ts      # Core: runAgentLoop + orchestrate / 核心引擎
+├── hooks/               # Custom Hooks / 自定义Hooks
+├── i18n/                # Internationalization / 国际化配置
+├── stores/              # State management / 状态管理
+├── types/               # TypeScript types / 类型定义
+├── utils/               # Utilities / 工具函数
+├── App.tsx              # Main app / 主应用
+└── main.tsx             # Entry point / 入口
 electron/
-├── preload.ts           # 预加载脚本
-└── main.ts              # Electron主进程
+├── preload.ts           # Preload script / 预加载脚本
+└── main.ts              # Electron main process / 主进程
 ```
 
-## 🎮 使用指南
+---
 
-1. **新建会话**：点击侧边栏"+"按钮
-2. **切换会话**：点击侧边栏会话条目
-3. **选择模型**：点击输入框上方模型标签
-4. **新建任务**：点击"+新任务"按钮
-5. **上传文件**：点击附件图标或直接拖拽
-6. **查看思考过程**：点击"查看完整思考过程"展开
-7. **折叠/展开**：点击蓝色标题栏折叠/展开消息
-8. **切换语言**：点击侧边栏底部语言图标
+## 🎮 User Guide / 使用指南
 
-## ⚙️ 配置
+1. **New Session / 新建会话**：Click "+" in sidebar / 点击侧边栏"+"按钮
+2. **Switch Session / 切换会话**：Click session entry / 点击侧边栏会话条目
+3. **Select Model / 选择模型**：Click model tag above input / 点击输入框上方模型标签
+4. **New Task / 新建任务**：Click "+新任务" button / 点击"+新任务"按钮
+5. **Upload File / 上传文件**：Click attachment icon or drag & drop / 点击附件图标或直接拖拽
+6. **View Thinking / 查看思考**：Click "查看完整思考过程" / 点击"查看完整思考过程"
+7. **Collapse/Expand / 折叠/展开**：Click blue title bar / 点击蓝色标题栏
+8. **Switch Language / 切换语言**：Click language icon in sidebar / 点击侧边栏底部语言图标
 
-在"设置"页面中可以：
-- 添加/编辑/删除AI模型
-- 配置模型API地址、密钥、参数
-- 设置主模型（带皇冠👑标识）
-- 调整温度、Top-P等生成参数
+---
+
+## ⚙️ Configuration / 配置
+
+In the Settings page, you can: / 在"设置"页面中可以：
+- Add/Edit/Delete AI models / 添加/编辑/删除AI模型
+- Configure API address, key, parameters / 配置模型API地址、密钥、参数
+- Set main model (with 👑 crown icon) / 设置主模型（带皇冠👑标识）
+- Adjust temperature, Top-P, etc. / 调整温度、Top-P等生成参数
+
+---
+
+## 📦 Download / 下载
+
+Go to [Releases](https://github.com/yzw123456-666/many-agent/releases) page to download the latest installer.
+
+前往 [Releases](https://github.com/yzw123456-666/many-agent/releases) 页面下载最新安装包。
+
+---
 
 ## 📄 License
 
-MIT License
+MIT License / MIT 许可证

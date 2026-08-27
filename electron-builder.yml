@@ -11,6 +11,8 @@ files:
   - dist-electron/**/*
   - "!**/*.map"
 
+asar: false
+
 extraResources:
   - from: plugins
     to: plugins

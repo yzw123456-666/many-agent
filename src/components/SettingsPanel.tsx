@@ -1101,10 +1101,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
                   <span className="text-white text-2xl font-bold">M</span>
                 </div>
                 <h2 className="text-xl font-bold text-gray-800 mb-1">Many AI</h2>
-                <p className="text-sm text-gray-500 mb-4">版本 1.0.0</p>
-                <p className="text-sm text-gray-600 max-w-md mx-auto">
-                  Many AI 是一款智能 AI 助手桌面应用，支持多种 AI 模型，帮助你完成各种任务。
+                <p className="text-sm text-gray-500 mb-1">版本 1.0.0</p>
+                <p className="text-xs text-gray-400 mb-4">完成于 2026年08月27日</p>
+                <p className="text-sm text-gray-600 max-w-md mx-auto mb-4">
+                  多智能体桌面应用，支持多模型协作完成复杂任务。
                 </p>
+                <div className="text-xs text-gray-400 space-y-1">
+                  <p>Electron + React + TypeScript + Tailwind CSS</p>
+                  <p>GitHub: yzw123456-666/many-agent</p>
+                </div>
               </div>
             )}
 

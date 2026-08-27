@@ -28,6 +28,8 @@ import {
   MoreHorizontal,
   X,
   PenLine,
+  Terminal,
+  ChevronUp,
 } from 'lucide-react'
 import { useAppStore } from '../stores'
 import { TaskMessage, SubTask } from '../types'
@@ -222,6 +224,7 @@ const TaskWorkspace: React.FC<TaskWorkspaceProps> = ({ onBack }) => {
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null)
   const [collapsedProcess, setCollapsedProcess] = useState<Record<string, boolean>>({})
   const [expandedArtifacts, setExpandedArtifacts] = useState<Record<string, boolean>>({})
+  const [expandedToolMsgs, setExpandedToolMsgs] = useState<Record<string, boolean>>({})
   const [dismissedQuestions, setDismissedQuestions] = useState<Record<string, boolean>>({})
   const [customAnswer, setCustomAnswer] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -644,20 +647,91 @@ const TaskWorkspace: React.FC<TaskWorkspaceProps> = ({ onBack }) => {
       const isToolMsg = msg.content.includes('read_file') || msg.content.includes('write_file') ||
                         msg.content.includes('list_files') || msg.content.includes('run_command') ||
                         msg.content.includes('edit_file') || msg.content.includes('search_files')
+      
+      // 解析工具详情
+      const writeFiles = [...msg.content.matchAll(/(?:write_file|edit_file|append_file)\s*\(([^)]+)\)/g)].map(m => m[1].trim())
+      const readFiles = [...msg.content.matchAll(/read_file\s*\(([^)]+)\)/g)].map(m => m[1].trim())
+      const runCmds = [...msg.content.matchAll(/run_command\s*\(([^)]+)\)/g)].map(m => m[1].trim())
+      
+      let toolSummary = msg.content
+      let toolIcon = <Wrench size={12} className="flex-shrink-0" />
+      let details: React.ReactNode = null
+      
+      if (writeFiles.length > 0) {
+        toolSummary = writeFiles.length === 1 ? `已编辑 ${writeFiles[0]}` : `已编辑 ${writeFiles.length} 个文件`
+        toolIcon = <PenLine size={12} className="flex-shrink-0" />
+        details = writeFiles.map((f, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs text-gray-600 py-0.5">
+            <FileText size={12} className="text-gray-400" />
+            <span>{f}</span>
+          </div>
+        ))
+      } else if (readFiles.length > 0) {
+        toolSummary = readFiles.length === 1 ? `已读取 ${readFiles[0]}` : `已读取 ${readFiles.length} 个文件`
+        toolIcon = <FileText size={12} className="flex-shrink-0" />
+        details = readFiles.map((f, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs text-gray-600 py-0.5">
+            <FileText size={12} className="text-gray-400" />
+            <span>{f}</span>
+          </div>
+        ))
+      } else if (runCmds.length > 0) {
+        toolSummary = `已执行 ${runCmds.length} 条命令`
+        toolIcon = <Terminal size={12} className="flex-shrink-0" />
+        // 提取命令执行结果
+        const cmdOutput = msg.content.split('\n').filter(l => l.startsWith('$') || l.includes('exit code') || l.includes('stdout') || l.includes('已执行')).slice(0, 5)
+        details = (
+          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600 font-mono max-h-40 overflow-y-auto">
+            {cmdOutput.length > 0 ? cmdOutput.map((l, i) => <div key={i}>{l}</div>) : <span className="text-gray-400">命令已执行</span>}
+          </div>
+        )
+      } else if (msg.content.includes('list_files')) {
+        toolSummary = '已列出文件'
+      } else if (msg.content.includes('search_files')) {
+        toolSummary = '已搜索文件'
+      }
+      
+      // 非工具消息或无详情 → 直接显示
+      if (!isToolMsg || (!writeFiles.length && !readFiles.length && !runCmds.length)) {
+        return (
+          <div key={msg.id} className="flex justify-center mb-3">
+            <div className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 max-w-[90%] ${
+              msg.status === 'running' ? 'bg-blue-50 text-blue-600'
+              : msg.status === 'failed' ? 'bg-red-50 text-red-600'
+              : 'bg-gray-100 text-gray-500'
+            }`}>
+              {msg.status === 'running' && <Loader2 size={12} className="animate-spin flex-shrink-0" />}
+              <span className="truncate">{msg.content}</span>
+            </div>
+          </div>
+        )
+      }
+      
+      // 可展开的工具消息
+      const isExpanded = expandedToolMsgs[msg.id] || false
       return (
         <div key={msg.id} className="flex justify-center mb-3">
-          <div className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 max-w-[90%] ${
-            msg.status === 'running'
-              ? 'bg-blue-50 text-blue-600'
-              : msg.status === 'failed'
-              ? 'bg-red-50 text-red-600'
-              : isToolMsg
-              ? 'bg-amber-50 text-amber-700'
-              : 'bg-gray-100 text-gray-500'
-          }`}>
-            {msg.status === 'running' && <Loader2 size={12} className="animate-spin flex-shrink-0" />}
-            {isToolMsg && msg.status !== 'running' && <Wrench size={12} className="flex-shrink-0" />}
-            <span className="truncate">{msg.content}</span>
+          <div className="w-full max-w-[85%]">
+            <button
+              onClick={() => setExpandedToolMsgs(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+              className={`w-full px-4 py-2 rounded-full text-xs flex items-center gap-2 transition-colors ${
+                msg.status === 'running' ? 'bg-blue-50 text-blue-600'
+                : msg.status === 'failed' ? 'bg-red-50 text-red-600'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-150'
+              }`}
+            >
+              {msg.status === 'running' && <Loader2 size={12} className="animate-spin flex-shrink-0" />}
+              {msg.status !== 'running' && toolIcon}
+              <span className="truncate flex-1 text-left">{toolSummary}</span>
+              {msg.status !== 'running' && (
+                isExpanded ? <ChevronUp size={12} className="flex-shrink-0" /> : <ChevronRight size={12} className="flex-shrink-0" />
+              )}
+            </button>
+            {isExpanded && details && (
+              <div className="mt-2 ml-4 pl-3 border-l-2 border-gray-200">
+                {details}
+              </div>
+            )}
           </div>
         </div>
       )

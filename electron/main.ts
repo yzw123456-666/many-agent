@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, Notification } from 'electron'
+﻿import { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, Notification } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
@@ -44,6 +44,7 @@ if (!gotTheLock) {
         preload: path.join(__dirname, 'preload.js'),
         contextIsolation: true,
         nodeIntegration: false,
+        webSecurity: false,
       },
       titleBarStyle: 'hidden',
       titleBarOverlay: false,
@@ -51,10 +52,7 @@ if (!gotTheLock) {
       show: false,
     })
 
-    const isInAsar = __dirname.includes('.asar')
-    const indexPath = isInAsar
-      ? path.join(__dirname, 'dist/index.html')
-      : path.join(__dirname, '../dist/index.html')
+    const indexPath = path.join(__dirname, '../dist/index.html')
     mainWindow.loadFile(indexPath)
     mainWindow.once('ready-to-show', () => mainWindow?.show())
     mainWindow.on('closed', () => { mainWindow = null })
@@ -472,3 +470,6 @@ if (!gotTheLock) {
     if (process.platform !== 'darwin') app.quit()
   })
 }
+
+
+
