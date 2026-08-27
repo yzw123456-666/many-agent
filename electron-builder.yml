@@ -1,0 +1,54 @@
+appId: com.manyai.agent
+productName: Many AI
+copyright: Copyright © 2024 Many AI Team
+
+directories:
+  output: ../包时的文件/release
+  buildResources: resources
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - "!**/*.map"
+
+extraResources:
+  - from: plugins
+    to: plugins
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Many AI
+  language: 2052
+
+portable:
+  artifactName: "${productName}-Portable-${version}.${ext}"
+
+publish:
+  provider: generic
+  url: ""
+
+mac:
+  target:
+    - dmg
+    - zip
+  icon: resources/icon.icns
+  category: public.app-category.developer-tools
+
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: resources
+  category: Development
