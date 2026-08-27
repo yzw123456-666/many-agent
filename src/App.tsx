@@ -151,6 +151,28 @@ const ProjectsPage: React.FC = () => {
   )
 }
 
+// 技能头像组件：优先用iconUrl，否则用名称首字
+const SkillAvatar: React.FC<{ skill: any; size?: string }> = ({ skill, size = 'w-10 h-10' }) => {
+  if (skill.iconUrl) {
+    return (
+      <div className={`${size} rounded-full overflow-hidden flex-shrink-0 bg-gray-100`}>
+        <img src={skill.iconUrl} alt={skill.name} className="w-full h-full object-cover" onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+        }} />
+        <div className={`${size} ${skill.color || 'bg-gray-400'} rounded-full items-center justify-center text-lg font-medium text-white hidden`}>
+          {skill.name?.[0] || '?'}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`${size} ${skill.color || 'bg-gray-400'} rounded-full flex items-center justify-center text-lg font-medium text-white flex-shrink-0`}>
+      {skill.name?.[0] || '?'}
+    </div>
+  )
+}
+
 // 技能与连接器页面
 const ExpertsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recommended' | 'skillhub' | 'suites' | 'installed'>('recommended')
@@ -168,10 +190,10 @@ const ExpertsPage: React.FC = () => {
   const categories = ['全部', '办公效率', '内容创作', '开发编程', '数据分析', 'AI Agent', '知识管理', '生活服务']
 
   const featuredSkills = [
-    { name: '腾讯微云', desc: '管理腾讯微云网盘平台：列表、上传、下载、删除、分享', icon: '☁️', color: 'bg-blue-500', slug: 'tencent-wvyun' },
-    { name: '腾讯问卷', desc: '腾讯问卷操作（创建、修改、逻辑设置、统计）', icon: '📋', color: 'bg-green-500', slug: 'tencent-wenjuan' },
-    { name: '鹅厂辟谣助手', desc: '面向腾讯相关传闻的辟谣辅助 Skill', icon: '🔍', color: 'bg-yellow-500', slug: 'epang-piyao' },
-    { name: '腾讯会议', desc: '腾讯会议管理助手，支持预约/创建/修改/取消会议', icon: '📹', color: 'bg-blue-600', slug: 'tencent-meeting' },
+    { name: '腾讯微云', desc: '管理腾讯微云网盘平台：列表、上传、下载、删除、分享', icon: '☁️', iconUrl: null, color: 'bg-blue-500', slug: 'tencent-wvyun' },
+    { name: '腾讯问卷', desc: '腾讯问卷操作（创建、修改、逻辑设置、统计）', icon: '📋', iconUrl: null, color: 'bg-green-500', slug: 'tencent-wenjuan' },
+    { name: '鹅厂辟谣助手', desc: '面向腾讯相关传闻的辟谣辅助 Skill', icon: '🔍', iconUrl: null, color: 'bg-yellow-500', slug: 'epang-piyao' },
+    { name: '腾讯会议', desc: '腾讯会议管理助手，支持预约/创建/修改/取消会议', icon: '📹', iconUrl: null, color: 'bg-blue-600', slug: 'tencent-meeting' },
   ]
 
   // 实时从 SkillHub API 获取技能（按下载量排序）
@@ -190,7 +212,7 @@ const ExpertsPage: React.FC = () => {
           slug: s.slug,
           name: s.name,
           desc: (s.description_zh || s.description || '').slice(0, 120),
-          icon: catIcon[s.category] || '📦',
+          iconUrl: s.iconUrl || null,
           color: colors[(pageNum * 50 + i) % colors.length],
           category: catMap[s.category] || '其他',
           downloads: s.downloads || 0,
@@ -232,7 +254,7 @@ const ExpertsPage: React.FC = () => {
           const catIcon: Record<string,string> = { 'office-efficiency':'💼','content-creation':'✍️','dev-programming':'💻','data-analysis':'📊','design-media':'🎨','ai-agent':'🤖','knowledge-management':'🧠','life-service':'🏠','business-ops':'📈','professional':'👔','education':'📚' }
           setSkillhubSkills(data.data.skills.map((s: any, i: number) => ({
             slug: s.slug, name: s.name, desc: (s.description_zh || s.description || '').slice(0, 120),
-            icon: catIcon[s.category] || '📦', color: colors[i % colors.length],
+            iconUrl: s.iconUrl || null, color: colors[i % colors.length],
             category: catMap[s.category] || '其他', downloads: s.downloads || 0, stars: s.stars || 0,
           })))
         }
@@ -385,14 +407,12 @@ const ExpertsPage: React.FC = () => {
                     className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
                     onContextMenu={(e) => handleContextMenu(e, skill)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 ${skill.color} rounded-full flex items-center justify-center text-lg flex-shrink-0`}>
-                        {skill.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
-                        <p className="text-xs text-gray-400 mt-0.5">{skill.desc}</p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <SkillAvatar skill={skill} />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
+                      <p className="text-xs text-gray-400 mt-0.5">{skill.desc}</p>
+                    </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleContextMenu(e, skill) }}
@@ -430,7 +450,7 @@ const ExpertsPage: React.FC = () => {
                 return (
                   <div key={skill.slug} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className={`w-10 h-10 ${skill.color} rounded-full flex items-center justify-center text-lg`}>{skill.icon}</div>
+                      <SkillAvatar skill={skill} />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
                       </div>
@@ -466,7 +486,7 @@ const ExpertsPage: React.FC = () => {
               return (
                 <div key={slug} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-10 h-10 ${skill.color || 'bg-gray-400'} rounded-full flex items-center justify-center text-lg`}>{skill.icon}</div>
+                    <SkillAvatar skill={skill} />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-gray-800 text-sm truncate">{skill.name}</div>
                     </div>

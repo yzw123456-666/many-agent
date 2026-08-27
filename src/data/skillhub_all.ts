@@ -3,6 +3,7 @@ export interface SkillHubSkill {
   name: string
   desc: string
   icon: string
+  iconUrl?: string | null
   color: string
   category: string
   downloads: number
