@@ -3,7 +3,7 @@ productName: Many AI
 copyright: Copyright © 2024 Many AI Team
 
 directories:
-  output: ../包时的文件/release
+  output: C:/manyai-build/release
   buildResources: resources
 
 files:

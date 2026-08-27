@@ -1,6 +1,6 @@
 {
   "name": "many-ai",
-  "version": "1.0.0",
+  "version": "26.8.27.2042",
   "description": "Many AI - 智能助手桌面应用",
   "main": "dist-electron/main.js",
   "author": "Many AI Team",
@@ -38,7 +38,7 @@
     "concurrently": "^9.0.1",
     "cross-env": "^7.0.3",
     "electron": "^32.1.0",
-    "electron-builder": "^25.0.5",
+    "electron-builder": "^25.1.8",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4",

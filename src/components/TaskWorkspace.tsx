@@ -393,16 +393,24 @@ const TaskWorkspace: React.FC<TaskWorkspaceProps> = ({ onBack }) => {
           model,
           task.folderPath,
           userRequest,
-          `你是一个AI任务执行助手「${model.name}」。你的擅长领域：${getCapabilityDesc(model.id)}。工作目录：${task.folderPath}\n\n你可以使用文件读写、目录浏览、命令执行等工具来完成任务。请分析用户需求，合理使用工具，确保任务完成。任务完成时输出 DONE: 总结结果。`,
+          `你是一个AI任务执行助手「${model.name}」。你的擅长领域：${getCapabilityDesc(model.id)}。工作目录：${task.folderPath}\n\n你可以使用文件读写、目录浏览、命令执行、技能调用等工具来完成任务。调用技能时使用 use_skill 工具，参数为 skill_name 和 description。请分析用户需求，合理使用工具，确保任务完成。任务完成时输出 DONE: 总结结果。`,
           allowExec,
           {
             onStatus: (c) => updateStatusMsg(c),
             onToolUse: async (tool, args, result) => {
               await closeStatusMsg()
+              let summary = `${result.ok ? '✅' : '❌'} ${tool}`
+              if (tool === 'use_skill') {
+                summary = `${result.ok ? '⚡' : '❌'} 调用技能「${args.skill_name || ''}」${args.description ? ': ' + args.description : ''}`
+              } else if (args.path) {
+                summary += ` (${args.path})`
+              } else if (args.command) {
+                summary += ` (${args.command})`
+              }
               await addTaskMessage(task.id, {
                 id: uuidv4(),
                 role: 'system',
-                content: `${result.ok ? '✅' : '❌'} ${tool} ${args.path ? `(${args.path})` : args.command ? `(${args.command})` : ''}`,
+                content: summary,
                 timestamp: Date.now(),
                 status: result.ok ? 'completed' : 'failed',
               })
@@ -651,18 +659,29 @@ const TaskWorkspace: React.FC<TaskWorkspaceProps> = ({ onBack }) => {
     if (msg.role === 'system') {
       const isToolMsg = msg.content.includes('read_file') || msg.content.includes('write_file') ||
                         msg.content.includes('list_files') || msg.content.includes('run_command') ||
-                        msg.content.includes('edit_file') || msg.content.includes('search_files')
+                        msg.content.includes('edit_file') || msg.content.includes('search_files') ||
+                        msg.content.includes('use_skill')
       
       // 解析工具详情
       const writeFiles = [...msg.content.matchAll(/(?:write_file|edit_file|append_file)\s*\(([^)]+)\)/g)].map(m => m[1].trim())
       const readFiles = [...msg.content.matchAll(/read_file\s*\(([^)]+)\)/g)].map(m => m[1].trim())
       const runCmds = [...msg.content.matchAll(/run_command\s*\(([^)]+)\)/g)].map(m => m[1].trim())
+      const skillCalls = [...msg.content.matchAll(/use_skill\s*\(([^)]+)\)/g)].map(m => m[1].trim())
       
       let toolSummary = msg.content
       let toolIcon = <Wrench size={12} className="flex-shrink-0" />
       let details: React.ReactNode = null
       
-      if (writeFiles.length > 0) {
+      if (skillCalls.length > 0) {
+        toolSummary = skillCalls.length === 1 ? `已调用技能 ${skillCalls[0]}` : `已调用 ${skillCalls.length} 个技能`
+        toolIcon = <Zap size={12} className="flex-shrink-0" />
+        details = skillCalls.map((s, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs text-gray-600 py-0.5">
+            <Zap size={12} className="text-amber-500" />
+            <span>{s}</span>
+          </div>
+        ))
+      } else if (writeFiles.length > 0) {
         toolSummary = writeFiles.length === 1 ? `已编辑 ${writeFiles[0]}` : `已编辑 ${writeFiles.length} 个文件`
         toolIcon = <PenLine size={12} className="flex-shrink-0" />
         details = writeFiles.map((f, i) => (
@@ -697,7 +716,7 @@ const TaskWorkspace: React.FC<TaskWorkspaceProps> = ({ onBack }) => {
       }
       
       // 非工具消息或无详情 → 直接显示
-      if (!isToolMsg || (!writeFiles.length && !readFiles.length && !runCmds.length)) {
+      if (!isToolMsg || (!writeFiles.length && !readFiles.length && !runCmds.length && !skillCalls.length)) {
         return (
           <div key={msg.id} className="flex justify-center mb-3">
             <div className={`px-4 py-2 rounded-full text-xs flex items-center gap-2 max-w-[90%] ${

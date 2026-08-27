@@ -274,8 +274,13 @@ export async function executeTool(
           .filter(Boolean).join('\n')
         return { ok: r.ok, output: out || '(无输出)' }
       }
+      case 'use_skill': {
+        const skillName = String(args.skill_name ?? '')
+        const skillDesc = String(args.description ?? '')
+        return { ok: true, output: `已调用技能「${skillName}」${skillDesc ? ': ' + skillDesc : ''}` }
+      }
       default:
-        return { ok: false, output: `未知工具: ${tool}。可用工具: list_files, find_files, read_file, write_file, edit_file, append_file, delete_file, search_files, run_command` }
+        return { ok: false, output: `未知工具: ${tool}。可用工具: list_files, find_files, read_file, write_file, edit_file, append_file, delete_file, search_files, run_command, use_skill` }
     }
   } catch (e: any) {
     return { ok: false, output: e.message }
