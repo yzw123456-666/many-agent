@@ -175,7 +175,7 @@ const SkillAvatar: React.FC<{ skill: any; size?: string }> = ({ skill, size = 'w
 
 // 技能与连接器页面
 const ExpertsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'recommended' | 'skillhub' | 'suites' | 'installed'>('recommended')
+  const [activeTab, setActiveTab] = useState<'skillhub' | 'installed'>('skillhub')
   const [activeCategory, setActiveCategory] = useState('全部')
   const [installedSkills, setInstalledSkills] = useState<Set<string>>(new Set())
   const [enabledSkills, setEnabledSkills] = useState<Set<string>>(new Set())
@@ -189,13 +189,6 @@ const ExpertsPage: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const categories = ['全部', '办公效率', '内容创作', '开发编程', '数据分析', 'AI Agent', '知识管理', '生活服务']
-
-  const featuredSkills = [
-    { name: '腾讯微云', desc: '管理腾讯微云网盘平台：列表、上传、下载、删除、分享', icon: '☁️', iconUrl: null, color: 'bg-blue-500', slug: 'tencent-wvyun' },
-    { name: '腾讯问卷', desc: '腾讯问卷操作（创建、修改、逻辑设置、统计）', icon: '📋', iconUrl: null, color: 'bg-green-500', slug: 'tencent-wenjuan' },
-    { name: '鹅厂辟谣助手', desc: '面向腾讯相关传闻的辟谣辅助 Skill', icon: '🔍', iconUrl: null, color: 'bg-yellow-500', slug: 'epang-piyao' },
-    { name: '腾讯会议', desc: '腾讯会议管理助手，支持预约/创建/修改/取消会议', icon: '📹', iconUrl: null, color: 'bg-blue-600', slug: 'tencent-meeting' },
-  ]
 
   // 实时从 SkillHub API 获取技能（按下载量排序）
   const fetchSkillhub = useCallback(async (pageNum: number, append = false) => {
@@ -287,15 +280,6 @@ const ExpertsPage: React.FC = () => {
     return () => el.removeEventListener('scroll', handleScroll)
   }, [activeTab, loadingMore, hasMore, page])
 
-  const suites = [
-    { name: '办公效率套件', desc: '文档 + 表格 + 演示 + 邮件，一站式办公自动化', icon: '💼', color: 'bg-blue-500', downloads: 88000, stars: 421, slug: 'office-suite' },
-    { name: '新媒体运营套件', desc: '图文创作、排版、多平台分发、数据复盘', icon: '📱', color: 'bg-pink-500', downloads: 76000, stars: 389, slug: 'media-suite' },
-    { name: '数据分析套件', desc: '数据清洗、可视化图表、分析报告自动生成', icon: '📊', color: 'bg-emerald-500', downloads: 65000, stars: 342, slug: 'data-suite' },
-    { name: '开发编程套件', desc: '代码生成、审查、测试、部署全流程辅助', icon: '⌨️', color: 'bg-sky-500', downloads: 59000, stars: 315, slug: 'dev-suite' },
-    { name: '电商运营套件', desc: '商品文案、详情页、评价分析、竞品监控', icon: '🛒', color: 'bg-orange-500', downloads: 47000, stars: 264, slug: 'ecommerce-suite' },
-    { name: '知识管理套件', desc: '笔记收集、知识库构建、智能检索与问答', icon: '🧠', color: 'bg-violet-500', downloads: 41000, stars: 231, slug: 'knowledge-suite' },
-  ]
-
   const installSkill = (slug: string) => {
     setDownloading(prev => { const n = new Set(prev); n.add(slug); return n })
     setTimeout(() => {
@@ -323,7 +307,7 @@ const ExpertsPage: React.FC = () => {
     setContextMenu({ x: e.clientX, y: e.clientY, skill })
   }
 
-  const allSkillSources = [...featuredSkills, ...skillhubSkills]
+  const allSkillSources = skillhubSkills
   const installedList = allSkillSources.filter(s => installedSkills.has(s.slug))
 
   const getDisplaySkills = () => {
@@ -403,7 +387,7 @@ const ExpertsPage: React.FC = () => {
                   <Download size={24} className="text-gray-400" />
                 </div>
                 <p className="text-gray-500 text-sm mb-1">还没有安装任何技能</p>
-                <p className="text-gray-400 text-xs">去「推荐」或「SkillHub」浏览并安装技能</p>
+                <p className="text-gray-400 text-xs">去「SkillHub」浏览并安装技能</p>
               </div>
             ) : (
               displaySkills.map((skill: any) => {
