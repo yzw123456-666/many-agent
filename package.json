@@ -1,0 +1,48 @@
+{
+  "name": "many-ai",
+  "version": "1.0.0",
+  "description": "Many AI - 智能助手桌面应用",
+  "main": "dist-electron/main.js",
+  "author": "Many AI Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder --config electron-builder.yml",
+    "electron:build:win": "npm run build && electron-builder --win --config electron-builder.yml",
+    "electron:build:portable": "npm run build && electron-builder --win portable --config electron-builder.yml"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "i18next": "^23.12.2",
+    "lucide-react": "^0.441.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.0.1",
+    "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.26.0",
+    "react-syntax-highlighter": "^15.5.0",
+    "remark-gfm": "^4.0.0",
+    "uuid": "^10.0.0",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "cross-env": "^7.0.3",
+    "electron": "^32.1.0",
+    "electron-builder": "^25.0.5",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3",
+    "wait-on": "^8.0.0"
+  }
+}
