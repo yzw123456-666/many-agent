@@ -1,0 +1,47 @@
+{
+  "name": "workbuddy-builtin",
+  "version": "1.0.0",
+  "description": "WorkBuddy 内置技能包",
+  "skills": [
+    {
+      "id": "daily-office",
+      "name": "日常办公",
+      "description": "帮助处理日常办公任务，如文档编辑、邮件处理、日程管理等",
+      "category": "办公",
+      "enabled": true,
+      "prompt": "你是一个办公助手，擅长处理各种日常办公任务。"
+    },
+    {
+      "id": "code-develop",
+      "name": "代码开发",
+      "description": "帮助编写、调试和优化代码，支持多种编程语言",
+      "category": "开发",
+      "enabled": true,
+      "prompt": "你是一个代码开发助手，擅长编写、调试和优化代码。"
+    },
+    {
+      "id": "design-creative",
+      "name": "设计创意",
+      "description": "帮助进行UI/UX设计、图像处理、创意构思等",
+      "category": "设计",
+      "enabled": true,
+      "prompt": "你是一个设计创意助手，擅长UI/UX设计和创意构思。"
+    },
+    {
+      "id": "document-process",
+      "name": "文档处理",
+      "description": "帮助处理各种文档格式，如Word、PDF、Markdown等",
+      "category": "文档",
+      "enabled": true,
+      "prompt": "你是一个文档处理助手，擅长处理各种文档格式。"
+    },
+    {
+      "id": "data-analysis",
+      "name": "数据分析",
+      "description": "帮助进行数据清洗、分析、可视化和报告生成",
+      "category": "数据",
+      "enabled": true,
+      "prompt": "你是一个数据分析助手，擅长数据清洗、分析和可视化。"
+    }
+  ]
+}
